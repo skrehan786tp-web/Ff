@@ -6,13 +6,28 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
-      - run: chmod +x gradlew
-      - run: ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+          
+      - name: Unzip aur Build APK
+        run: |
+          # Pehle zip file ko extract karenge
+          unzip *.zip -d my_code
+          cd my_code
+          
+          # Zip ke andar jahan bhi gradlew file chhipi hai wahan jayenge
+          DIR=$(find . -name "gradlew" -printf "%h\n" | head -n 1)
+          cd "$DIR"
+          
+          # APK banayenge
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: my-android-apk
-          path: app/build/outputs/apk/**/*.apk
+          path: '**/*.apk'
