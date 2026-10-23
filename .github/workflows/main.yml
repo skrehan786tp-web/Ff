@@ -3,31 +3,36 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
           
-      - name: Unzip aur Build APK
+      - name: Magic Build Script
         run: |
-          # Pehle zip file ko extract karenge
-          unzip *.zip -d my_code
-          cd my_code
+          LOG="$GITHUB_WORKSPACE/error_log.txt"
+          echo "==== APK BUILD LOG ====" > $LOG
+          echo "Zip file open kar rahe hain..." >> $LOG
+          unzip *.zip -d my_app >> $LOG 2>&1 || echo "Zip open fail ho gaya!" >> $LOG
           
-          # Zip ke andar jahan bhi gradlew file chhipi hai wahan jayenge
           DIR=$(find . -name "gradlew" -printf "%h\n" | head -n 1)
+          if [ -z "$DIR" ]; then
+            echo "❌ ERROR: Aapki zip file mein 'gradlew' file nahi mili! App ka code incomplete hai." >> $LOG
+            exit 1
+          fi
+          
           cd "$DIR"
-          
-          # APK banayenge
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug >> $LOG 2>&1
           
-      - name: Upload APK
+      - name: Result Download Karein
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: my-android-apk
-          path: '**/*.apk'
+          name: Download-Me
+          path: |
+            **/*.apk
+            error_log.txt
